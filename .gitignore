@@ -2,12 +2,39 @@
 __pycache__/
 *.py[cod]
 *.pyo
-.venv/
+*.pyd
+*.pyi
+*.pyo
+*~
 
-# Hugging Face output
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Hugging Face / training outputs
 output/
 my-biography-model/
+*.safetensors
+*.pt
+*.pth
+trainer_state.json
+optimizer.pt
+scheduler.pt
+rng_state.pth
 
-# Datasets cache
-cache/
-**/.cache/
+# Cache and temp files
+.cache/
+*.cache
+*.log
+*.tmp
+*.bak
+
+# pytest
+.pytest_cache/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.DS_Store

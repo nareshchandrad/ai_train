@@ -14,6 +14,7 @@ REQUIREMENTS_FILE = ROOT_DIR / "requirements.txt"
 DEFAULT_DATA_PATH = ROOT_DIR / "data" / "biography_qa.jsonl"
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "output" / "trained-model"
 MANIFEST_FILE = DEFAULT_OUTPUT_DIR / "training_manifest.json"
+BASE_MODEL_LOCAL_DIR = ROOT_DIR / "output" / "base-models"
 
 PROJECT_CACHE_DIR = ROOT_DIR / ".cache"
 PROJECT_HF_HOME = PROJECT_CACHE_DIR / "huggingface"
@@ -547,12 +548,13 @@ def train_model(
     print(f"Loaded {len(rows)} biography examples from {data_path}")
     runtime_device, model_dtype, use_fp16, use_bf16 = resolve_runtime_device()
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    base_model_dir = resolve_local_model_path(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(base_model_dir, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+        base_model_dir,
         dtype=model_dtype,
         low_cpu_mem_usage=True,
     )
@@ -613,6 +615,7 @@ def train_model(
 
     manifest = {
         "base_model_name": model_name,
+        "base_model_dir": str(base_model_dir),
         "trained_model_dir": str(output_dir),
         "data_path": str(data_path),
         "num_examples": len(rows),
@@ -632,8 +635,8 @@ def generate_answer(model_reference: str | Path, question: str, max_new_tokens: 
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    model_ref = str(model_reference)
-    tokenizer = AutoTokenizer.from_pretrained(model_ref, trust_remote_code=True)
+    model_ref = resolve_local_model_path(model_reference)
+    tokenizer = AutoTokenizer.from_pretrained(str(model_ref), trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -663,7 +666,9 @@ def generate_answer(model_reference: str | Path, question: str, max_new_tokens: 
 
 
 def compare_models(base_model_name: str, trained_model_dir: Path, question: str, max_new_tokens: int = 120) -> dict[str, str]:
-    base_answer = generate_answer(base_model_name, question, max_new_tokens=max_new_tokens)
+    base_model_dir = resolve_local_model_path(base_model_name)
+    trained_model_dir = resolve_local_model_path(trained_model_dir)
+    base_answer = generate_answer(base_model_dir, question, max_new_tokens=max_new_tokens)
     trained_answer = generate_answer(trained_model_dir, question, max_new_tokens=max_new_tokens)
     return {
         "question": question,
@@ -684,3 +689,68 @@ def get_sample_questions() -> list[str]:
     if DEFAULT_DATA_PATH.exists():
         return sample_questions_from_data(DEFAULT_DATA_PATH)
     return []
+
+def sanitize_model_identifier(model_reference):
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", model_reference)
+    return safe.strip("_")
+
+
+def download_and_save_model(model_reference, local_path):
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    model_name = str(model_reference)
+    local_path.mkdir(parents=True, exist_ok=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.save_pretrained(local_path)
+
+    model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, low_cpu_mem_usage=True)
+    model.save_pretrained(local_path)
+
+    return local_path
+
+
+def resolve_local_model_path(model_reference):
+    reference_path = Path(model_reference)
+    if reference_path.exists():
+        return reference_path
+
+    model_name = str(model_reference)
+    local_path = BASE_MODEL_LOCAL_DIR / sanitize_model_identifier(model_name)
+    if local_path.exists():
+        return local_path
+
+    return download_and_save_model(model_name, local_path)
+
+
+def sanitize_model_identifier(model_reference):
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", model_reference)
+    return safe.strip("_")
+
+
+def download_and_save_model(model_reference, local_path):
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    model_name = str(model_reference)
+    local_path.mkdir(parents=True, exist_ok=True)
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.save_pretrained(local_path)
+
+    model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, low_cpu_mem_usage=True)
+    model.save_pretrained(local_path)
+
+    return local_path
+
+
+def resolve_local_model_path(model_reference):
+    reference_path = Path(model_reference)
+    if reference_path.exists():
+        return reference_path
+
+    model_name = str(model_reference)
+    local_path = BASE_MODEL_LOCAL_DIR / sanitize_model_identifier(model_name)
+    if local_path.exists():
+        return local_path
+
+    return download_and_save_model(model_name, local_path)

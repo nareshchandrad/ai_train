@@ -54,7 +54,8 @@ llm_train/
 ├── data/
 │   └── biography_qa.jsonl  # Training data
 ├── output/
-│   └── trained-model/      # Final model & manifest
+│   ├── base-models/      # downloaded base model copies
+│   └── trained-model/    # final fine-tuned model & manifest
 ├── .venv/               # Project-local Python env
 ├── .cache/huggingface/  # All model/cache/config
 └── requirements.txt     # Non-torch dependencies
@@ -98,6 +99,26 @@ One-shot examples:
 python Test_LLM.py --question "what is your name" --mode compare
 python Test_LLM.py --question "where were you born" --mode trained
 ```
+
+---
+
+## 🧪 Ad-hoc direct commands
+
+Run these from `d:\AI\llm_train`:
+
+```bash
+python -c "from llm_project import generate_answer; print(generate_answer('output/trained-model', 'Where were you born?'))"
+python -c "from llm_project import generate_answer; print(generate_answer('output/base-models/HuggingFaceTB_SmolLM2-135M-Instruct', 'Where were you born?'))"
+python -c "from llm_project import compare_models; print(compare_models('HuggingFaceTB/SmolLM2-135M-Instruct', 'output/trained-model', 'Where were you born?'))"
+```
+
+Recommended targets:
+
+- Final trained model: `output/trained-model`
+- Local base model copy: `output/base-models/HuggingFaceTB_SmolLM2-135M-Instruct`
+- Remote base model name: `HuggingFaceTB/SmolLM2-135M-Instruct`
+
+Use `output/trained-model` for normal inference; checkpoint folders are intermediate snapshots and are not the usual production target.
 
 ---
 

@@ -25,9 +25,10 @@ def parse_args() -> argparse.Namespace:
 
 def show_intro(manifest: dict):
     lines = [
-        "Hands-on student lab: ask the biography question to the base model, the trained model, or both.",
+        "Hands-on lab: ask a biography question to the base model, the trained model, or compare both.",
         "",
-        f"Base model: {manifest['base_model_name']}",
+        f"Base model source: {manifest['base_model_name']}",
+        f"Base model folder: {manifest.get('base_model_dir', manifest['base_model_name'])}",
         f"Trained model: {manifest['trained_model_dir']}",
         f"Training data: {manifest['data_path']}",
         f"Training device: {manifest['runtime_device']}",
@@ -36,9 +37,9 @@ def show_intro(manifest: dict):
     sample_questions = get_sample_questions()
     if sample_questions:
         lines.append("")
-        lines.append("Try questions like:")
+        lines.append("Sample questions you can try:")
         for question in sample_questions:
-            lines.append(f"- {question}")
+            lines.append(f"• {question}")
 
     print_block("Biography Model Test Lab", lines, color="blue")
 
@@ -67,11 +68,25 @@ def run_one_shot(manifest: dict, question: str, mode: str, max_new_tokens: int):
 
 def interactive_lab(manifest: dict, max_new_tokens: int):
     import questionary
+    from prompt_toolkit.styles import Style
+
+    menu_style = Style(
+        [
+            ("qmark", "fg:#00c0ff bold"),
+            ("question", "bold fg:#ff0000"),
+            ("pointer", "fg:#00ff80 bold"),
+            ("selected", "fg:#00ff80 bold"),
+            ("instruction", "fg:#808080 italic"),
+            ("separator", "fg:#666666"),
+            ("text", "fg:#f8f8f2"),
+        ]
+    )
 
     show_intro(manifest)
+    print()
     while True:
         action = questionary.select(
-            "Choose what the student wants to explore:",
+            "Choose what you want to explore:",
             choices=[
                 "Ask the trained model",
                 "Ask the base model",
@@ -79,22 +94,27 @@ def interactive_lab(manifest: dict, max_new_tokens: int):
                 "Show sample questions",
                 "Exit",
             ],
+            qmark="❯",
+            pointer="➜",
+            instruction="Use arrow keys to choose an option.",
+            style=menu_style,
+            use_shortcuts=False,
         ).ask()
 
         if action in {None, "Exit"}:
-            print("Leaving the test lab.")
+            print("Exiting the test lab.")
             return
 
         if action == "Show sample questions":
             sample_questions = get_sample_questions()
             if sample_questions:
-                print_block("Sample Questions", [f"- {question}" for question in sample_questions], color="cyan")
+                print_block("Sample Questions", [f"• {question}" for question in sample_questions], color="cyan")
             else:
                 print("No sample questions found.")
             continue
 
         question = questionary.text(
-            "Enter a biography question. Leave blank to return to the menu:"
+            "Type your biography question, or press Enter to return to the menu:"
         ).ask()
         if not question:
             continue
