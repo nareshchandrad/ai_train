@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+
+# Hugging Face output
+output/
+my-biography-model/
+
+# Datasets cache
+cache/
+**/.cache/
