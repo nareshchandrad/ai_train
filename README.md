@@ -109,10 +109,4 @@ python Train_LLM.py --yes --replace_output
 
 ---
 
-<div align="center">
-
-<img src="https://img.shields.io/badge/LLM-Lab-blueviolet?style=for-the-badge" />
-<img src="https://img.shields.io/badge/Student-Ready-brightgreen?style=for-the-badge" />
-<img src="https://img.shields.io/badge/Ready-Hands-on-blue?style=for-the-badge" />
-
-</div>
+> Built for students: small, repeatable, and easy to run with Python.
